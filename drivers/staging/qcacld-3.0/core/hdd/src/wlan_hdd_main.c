@@ -110,6 +110,8 @@
 #include "wlan_hdd_apf.h"
 #endif
 
+#include "wlan_hdd_auth_deny.h"
+
 #ifdef CNSS_GENL
 #include <net/cnss_nl.h>
 #endif
@@ -4019,6 +4021,8 @@ static void hdd_cleanup_adapter(hdd_context_t *hdd_ctx, hdd_adapter_t *adapter,
 		 * since the memory has been reclaimed
 		 */
 	}
+
+    wlan_hdd_auth_deny_deinit();
 }
 
 static QDF_STATUS hdd_check_for_existing_macaddr(hdd_context_t *hdd_ctx,
@@ -4739,6 +4743,8 @@ hdd_adapter_t *hdd_open_adapter(hdd_context_t *hdd_ctx, uint8_t session_type,
 
 	if (adapter->device_mode == QDF_STA_MODE)
 		wlan_hdd_debugfs_csr_init(adapter);
+
+    wlan_hdd_auth_deny_init();
 
 	return adapter;
 

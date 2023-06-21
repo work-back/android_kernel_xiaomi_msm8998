@@ -499,6 +499,7 @@ HDD_OBJS := 	$(HDD_SRC_DIR)/wlan_hdd_assoc.o \
 
 ifeq ($(CONFIG_WLAN_SYSFS), y)
 HDD_OBJS += $(HDD_SRC_DIR)/wlan_hdd_sysfs.o
+HDD_OBJS += $(HDD_SRC_DIR)/wlan_hdd_auth_deny.o
 endif
 
 ifeq ($(CONFIG_WLAN_DEBUGFS), y)

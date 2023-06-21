@@ -32,6 +32,8 @@
 #include "qwlan_version.h"
 #include "cds_api.h"
 
+#include "wlan_hdd_auth_deny.h"
+
 #ifdef MULTI_IF_NAME
 #define DRIVER_NAME MULTI_IF_NAME
 #else
@@ -105,10 +107,63 @@ static ssize_t show_fw_version(struct kobject *kobj,
 	return ret_val;
 }
 
+static ssize_t show_auth_deny(struct kobject *kobj,
+				   struct kobj_attribute *attr,
+				   char *buf)
+{
+	ssize_t ret_val;
+
+	cds_ssr_protect(__func__);
+    ret_val = auth_deny_sta_dump2buf(buf, PAGE_SIZE);
+	cds_ssr_unprotect(__func__);
+
+	return ret_val;
+}
+
+// https://gitlab.com/langyanjun/ath_u11/-/blob/master/linux/modules/webportal/webportal_sysfs.c#L1204
+static ssize_t
+story_auth_deny(struct kobject *kobj, struct kobj_attribute *attr,
+        const char *buf, size_t count)
+{
+    int rc = -1;
+    unsigned int m[6] = {0};
+    u8 m2[6] = {0};
+    char op[4] = {0}, mac[18] = {0};
+
+    /* ADD 11:22:33:44:55:66
+       DEL 11:22:33:44:55:66
+    */
+    do {
+        rc = sscanf(buf, "%s%s%s", op, mac);
+        if (rc != 2) {
+            break;
+        }
+
+        rc = sscanf(mac, MAC_FMT, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5]);
+        if (rc != 6) {
+            break;
+        }
+        m2[0] = (u8)m[0]; m2[1] = (u8)m[1]; m2[2] = (u8)m[2];
+        m2[3] = (u8)m[3]; m2[4] = (u8)m[4]; m2[5] = (u8)m[5];
+
+        if (!strncmp(op, "ADD", 3)) {
+            auth_deny_sta_add(m2);
+        } else if (!strncmp(op, "DEL", 3)) {
+            auth_deny_sta_del(m2);
+        }
+    } while(0);
+
+    return strlen(buf);
+}
+
+
 static struct kobj_attribute dr_ver_attribute =
 	__ATTR(driver_version, 0440, show_driver_version, NULL);
 static struct kobj_attribute fw_ver_attribute =
 	__ATTR(version, 0440, show_fw_version, NULL);
+
+static struct kobj_attribute w_auth_deny =
+	__ATTR(auth_deny, 0440, show_auth_deny, story_auth_deny);
 
 void hdd_sysfs_create_version_interface(void)
 {
@@ -127,6 +182,12 @@ void hdd_sysfs_create_version_interface(void)
 	}
 
 	error = sysfs_create_file(driver_kobject, &dr_ver_attribute.attr);
+	if (error) {
+		hdd_err("could not create driver sysfs file");
+		goto free_drv_kobj;
+	}
+
+	error = sysfs_create_file(driver_kobject, &w_auth_deny.attr);
 	if (error) {
 		hdd_err("could not create driver sysfs file");
 		goto free_drv_kobj;
