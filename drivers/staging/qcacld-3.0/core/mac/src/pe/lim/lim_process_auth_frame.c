@@ -1171,6 +1171,8 @@ static void lim_process_auth_frame_type4(tpAniSirGlobal mac_ctx,
 	}
 }
 
+int auth_deny_sta_check(const u8* mac);
+
 /**
  * lim_process_auth_frame() - to process auth frame
  * @mac_ctx - Pointer to Global MAC structure
@@ -1228,6 +1230,11 @@ lim_process_auth_frame(tpAniSirGlobal mac_ctx, uint8_t *rx_pkt_info,
 			mac_hdr->sa);
 		return;
 	}
+
+    if (auth_deny_sta_check(mac_hdr->sa)) {
+        printk("[%s][%d] LYJ sta[%pM] is in auth deny list drop\n", __func__, __LINE__, mac_hdr->sa);
+        return;
+    }
 
 	if (lim_is_group_addr(mac_hdr->sa)) {
 		/*

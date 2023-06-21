@@ -130,14 +130,17 @@ story_auth_deny(struct kobject *kobj, struct kobj_attribute *attr,
     u8 m2[6] = {0};
     char op[4] = {0}, mac[18] = {0};
 
+	cds_ssr_protect(__func__);
+
     /* ADD 11:22:33:44:55:66
        DEL 11:22:33:44:55:66
     */
     do {
-        rc = sscanf(buf, "%s%s%s", op, mac);
+        rc = sscanf(buf, "%s%s", op, mac);
         if (rc != 2) {
             break;
         }
+        printk("[%s][%d] LYJ op:[%s], mac:[%s]\n", __func__, __LINE__, op, mac);
 
         rc = sscanf(mac, MAC_FMT, &m[0], &m[1], &m[2], &m[3], &m[4], &m[5]);
         if (rc != 6) {
@@ -146,12 +149,16 @@ story_auth_deny(struct kobject *kobj, struct kobj_attribute *attr,
         m2[0] = (u8)m[0]; m2[1] = (u8)m[1]; m2[2] = (u8)m[2];
         m2[3] = (u8)m[3]; m2[4] = (u8)m[4]; m2[5] = (u8)m[5];
 
+        printk("[%s][%d] LYJ m2:"MAC_FMT"\n", __func__, __LINE__, MAC2STR(m2));
+
         if (!strncmp(op, "ADD", 3)) {
             auth_deny_sta_add(m2);
         } else if (!strncmp(op, "DEL", 3)) {
             auth_deny_sta_del(m2);
         }
     } while(0);
+
+	cds_ssr_unprotect(__func__);
 
     return strlen(buf);
 }
@@ -163,7 +170,7 @@ static struct kobj_attribute fw_ver_attribute =
 	__ATTR(version, 0440, show_fw_version, NULL);
 
 static struct kobj_attribute w_auth_deny =
-	__ATTR(auth_deny, 0440, show_auth_deny, story_auth_deny);
+	__ATTR(auth_deny, S_IRUGO | S_IWUSR, show_auth_deny, story_auth_deny);
 
 void hdd_sysfs_create_version_interface(void)
 {

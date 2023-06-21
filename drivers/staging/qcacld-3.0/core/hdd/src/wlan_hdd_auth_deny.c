@@ -7,6 +7,7 @@
 #include "wlan_hdd_auth_deny.h"
 
 
+static int is_inited = 0;
 static spinlock_t ad_lock;
 static struct list_head ad_deny_list;
 
@@ -99,6 +100,13 @@ int auth_deny_sta_dump2buf(char *buf, int buf_len)
 
 void wlan_hdd_auth_deny_init(void)
 {
+    if (is_inited) {
+        return;
+    }
+
+    printk("[%s][%d] LYJ wlan_hdd_auth_deny_init\n", __func__, __LINE__);
+
+    is_inited = 1;
     spin_lock_init(&ad_lock);
     INIT_LIST_HEAD(&ad_deny_list);
 
